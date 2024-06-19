@@ -62,7 +62,7 @@ fun DetailsScreen(
     RateModalBottomSheet(
       modifier = Modifier.testTag(TestTags.Details.RATE_DIALOG),
       sheetState = rateBottomSheetState,
-      value = viewState.value.userDetails?.beautifiedRating,
+      value = viewState.value.accountDetails.rating,
       mediaTitle = viewState.value.mediaDetails?.title ?: "",
       onSubmitRate = viewModel::onSubmitRate,
       onClearRate = viewModel::onClearRating,
@@ -70,7 +70,7 @@ fun DetailsScreen(
         // TODO implement
       },
       onDismissRequest = viewModel::onDismissRateDialog,
-      canClearRate = viewState.value.userDetails?.rating != null
+      canClearRate = viewState.value.accountDetails.rating != null
     )
   }
 

@@ -2,7 +2,6 @@ package com.divinelink.feature.details.usecase
 
 import com.divinelink.core.commons.di.IoDispatcher
 import com.divinelink.core.commons.domain.FlowUseCase
-import com.divinelink.core.commons.domain.data
 import com.divinelink.core.data.details.repository.DetailsRepository
 import com.divinelink.core.data.session.model.SessionException
 import com.divinelink.core.datastore.SessionStorage
@@ -25,8 +24,8 @@ open class AddToWatchlistUseCase @Inject constructor(
   private val sessionStorage: SessionStorage,
   private val repository: DetailsRepository,
   @IoDispatcher val dispatcher: CoroutineDispatcher,
-) : FlowUseCase<AddToWatchlistParameters, Unit>(dispatcher) {
-  override fun execute(parameters: AddToWatchlistParameters): Flow<Result<Unit>> = flow {
+) : FlowUseCase<AddToWatchlistParameters, Boolean>(dispatcher) {
+  override fun execute(parameters: AddToWatchlistParameters): Flow<Result<Boolean>> = flow {
     val accountId = sessionStorage.accountId.first()
     val sessionId = sessionStorage.sessionId
 
@@ -54,7 +53,10 @@ open class AddToWatchlistUseCase @Inject constructor(
 
       val response = repository.addToWatchlist(request).last()
 
-      emit(Result.success(response.data))
+      response.fold(
+        onSuccess = { emit(Result.success(it.added)) },
+        onFailure = { emit(Result.failure(it)) }
+      )
     }
   }
 }

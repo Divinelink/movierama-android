@@ -1,7 +1,6 @@
 package com.divinelink.watchlist
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -147,15 +146,13 @@ private fun WatchlistTabs(
   selectedIndex: Int,
   onClick: (Int) -> Unit
 ) {
-  Row {
-    SecondaryTabRow(selectedTabIndex = selectedIndex) {
-      tabs.forEachIndexed { index, tab ->
-        Tab(
-          text = { Text(stringResource(tab.titleRes)) },
-          selected = index == selectedIndex,
-          onClick = { onClick(index) }
-        )
-      }
+  SecondaryTabRow(selectedTabIndex = selectedIndex) {
+    tabs.forEachIndexed { index, tab ->
+      Tab(
+        text = { Text(stringResource(tab.titleRes)) },
+        selected = index == selectedIndex,
+        onClick = { onClick(index) }
+      )
     }
   }
 }

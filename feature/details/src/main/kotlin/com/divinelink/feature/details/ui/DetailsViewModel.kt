@@ -25,6 +25,7 @@ import com.divinelink.feature.details.usecase.GetMovieDetailsUseCase
 import com.divinelink.feature.details.usecase.SubmitRatingParameters
 import com.divinelink.feature.details.usecase.SubmitRatingUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -55,6 +57,7 @@ class DetailsViewModel @Inject constructor(
     value = DetailsViewState(
       mediaId = args.id,
       mediaType = MediaType.from(args.mediaType),
+      accountDetails = AccountDetailsState.Loading,
       isLoading = true,
     )
   )
@@ -154,7 +157,7 @@ class DetailsViewModel @Inject constructor(
           _viewState.update { viewState ->
             viewState.copy(
               showRateDialog = false,
-              userDetails = updateOrCreateAccountMediaDetails(rating),
+              accountDetails = updateOrCreateAccountMediaDetails(rating),
               snackbarMessage = SnackbarMessage.from(
                 text = UIText.ResourceText(
                   R.string.details__rating_submitted_successfully,
@@ -187,19 +190,32 @@ class DetailsViewModel @Inject constructor(
    * When the user logs in, we should re-fetch the account details, and update the rating along
    * with the watchlist status.
    */
-  private fun updateOrCreateAccountMediaDetails(rating: Int): AccountMediaDetails {
-    return viewState.value.userDetails?.copy(
-      rating = rating.toFloat()
-    ) ?: AccountMediaDetails(
-      rating = rating.toFloat(),
-      watchlist = false,
-      id = viewState.value.mediaId,
-      favorite = false,
-    )
+  private fun updateOrCreateAccountMediaDetails(rating: Int): AccountDetailsState {
+    val accountDetails = viewState.value.accountDetails
+
+    return if (accountDetails is AccountDetailsState.LoggedIn) {
+      AccountDetailsState.LoggedIn(
+        accountDetails.accountDetails.copy(
+          rating = rating.toFloat()
+        )
+      )
+    } else {
+      AccountDetailsState.LoggedIn(
+        AccountMediaDetails(
+          rating = rating.toFloat(),
+          watchlist = false,
+          id = viewState.value.mediaId,
+          favorite = false,
+        )
+      )
+    }
   }
 
   fun onClearRating() {
-    if (viewState.value.userDetails == null) return
+    if (viewState.value.accountDetails !is AccountDetailsState.LoggedIn) return
+
+    val accountDetails = (viewState.value.accountDetails as AccountDetailsState.LoggedIn)
+      .accountDetails
 
     viewModelScope.launch {
       deleteRatingUseCase.invoke(
@@ -212,8 +228,8 @@ class DetailsViewModel @Inject constructor(
           Timber.d("Rating deleted")
           _viewState.update { viewState ->
             viewState.copy(
-              userDetails = viewState.userDetails?.copy(
-                rating = null
+              accountDetails = AccountDetailsState.LoggedIn(
+                accountDetails.copy(rating = null)
               ),
               snackbarMessage = SnackbarMessage.from(
                 text = UIText.ResourceText(
@@ -237,33 +253,53 @@ class DetailsViewModel @Inject constructor(
     }
   }
 
+  private fun updateWatchlistButtonStatus(added: Boolean) {
+    val details = viewState.value.accountDetails
+
+    _viewState.update {
+      it.copy(
+        accountDetails = AccountDetailsState.LoggedIn(
+          details.accountDetails.copy(watchlist = added)
+        )
+      )
+    }
+  }
+
   fun onAddToWatchlist() {
+    if (viewState.value.accountDetails !is AccountDetailsState.LoggedIn) {
+      showUserMustBeLoggedInSnackBar()
+      return
+    }
+
+    val accountDetails =
+      (viewState.value.accountDetails as AccountDetailsState.LoggedIn).accountDetails
+
     viewModelScope.launch {
       addToWatchlistUseCase.invoke(
         AddToWatchlistParameters(
           id = viewState.value.mediaId,
           mediaType = viewState.value.mediaType,
-          addToWatchlist = viewState.value.userDetails?.watchlist == false,
+          addToWatchlist = accountDetails.watchlist.not(),
         )
       ).collectLatest { result ->
-        result.onSuccess {
+        result.onSuccess { added ->
+          updateWatchlistButtonStatus(added)
+
           _viewState.update { viewState ->
-            if (viewState.userDetails?.watchlist == true) {
+            if (added) {
               viewState.copy(
-                userDetails = viewState.userDetails.copy(watchlist = false),
                 snackbarMessage = SnackbarMessage.from(
                   text = UIText.ResourceText(
-                    R.string.details__removed_from_watchlist,
+                    R.string.details__added_to_watchlist,
                     viewState.mediaDetails?.title!!
                   )
                 )
               )
             } else {
               viewState.copy(
-                userDetails = viewState.userDetails?.copy(watchlist = true),
                 snackbarMessage = SnackbarMessage.from(
                   text = UIText.ResourceText(
-                    R.string.details__added_to_watchlist,
+                    R.string.details__removed_from_watchlist,
                     viewState.mediaDetails?.title!!
                   )
                 )
@@ -272,15 +308,7 @@ class DetailsViewModel @Inject constructor(
           }
         }.onFailure {
           if (it is SessionException.InvalidAccountId) {
-            _viewState.update { viewState ->
-              viewState.copy(
-                snackbarMessage = SnackbarMessage.from(
-                  text = UIText.ResourceText(R.string.details__must_be_logged_in_to_watchlist),
-                  actionLabelText = UIText.ResourceText(R.string.login),
-                  onSnackbarResult = ::navigateToLogin
-                )
-              )
-            }
+            showUserMustBeLoggedInSnackBar()
           } else {
             _viewState.update { viewState ->
               viewState.copy(
@@ -321,18 +349,37 @@ class DetailsViewModel @Inject constructor(
     )
 
     fetchAccountMediaDetailsUseCase.invoke(params)
+      .onStart { delay(3000) }
       .collectLatest { result ->
         result.onSuccess {
           _viewState.update { viewState ->
             viewState.copy(
-              userDetails = result.data
+              accountDetails = AccountDetailsState.LoggedIn(it)
+            )
+          }
+        }.onFailure {
+          _viewState.update { viewState ->
+            viewState.copy(
+              accountDetails = AccountDetailsState.Unauthenticated
             )
           }
         }
       }
   }
 
-  // Consumers
+  private fun showUserMustBeLoggedInSnackBar() {
+    _viewState.update { viewState ->
+      viewState.copy(
+        snackbarMessage = SnackbarMessage.from(
+          text = UIText.ResourceText(R.string.details__must_be_logged_in_to_watchlist),
+          actionLabelText = UIText.ResourceText(R.string.login),
+          onSnackbarResult = ::navigateToLogin
+        )
+      )
+    }
+  }
+
+// Consumers
 
   fun consumeNavigateToLogin() {
     _viewState.update { viewState ->

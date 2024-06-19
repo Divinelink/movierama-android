@@ -2,6 +2,7 @@ package com.divinelink.feature.details.ui
 
 import android.content.Intent
 import android.content.res.Configuration
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -82,6 +83,7 @@ import com.divinelink.core.ui.TestTags
 import com.divinelink.core.ui.UIText
 import com.divinelink.core.ui.components.LoadingContent
 import com.divinelink.core.ui.components.WatchlistButton
+import com.divinelink.core.ui.components.WatchlistButtonSkeleton
 import com.divinelink.core.ui.components.details.SpannableRating
 import com.divinelink.core.ui.components.details.cast.CastList
 import com.divinelink.core.ui.components.details.genres.GenreLabel
@@ -202,7 +204,7 @@ fun DetailsContent(
             MediaDetailsContent(
               modifier = Modifier.padding(paddingValues = paddingValues),
               mediaDetails = mediaDetails,
-              userDetails = viewState.userDetails,
+              accountDetails = viewState.accountDetails,
               similarMoviesList = viewState.similarMovies,
               reviewsList = viewState.reviews,
               trailer = viewState.trailer,
@@ -269,7 +271,7 @@ private fun VideoPlayerSection(
 fun MediaDetailsContent(
   modifier: Modifier = Modifier,
   mediaDetails: MediaDetails,
-  userDetails: AccountMediaDetails?,
+  accountDetails: AccountDetailsState,
   similarMoviesList: List<MediaItem.Media>?,
   reviewsList: List<Review>?,
   trailer: Video?,
@@ -334,17 +336,28 @@ fun MediaDetailsContent(
       }
 
       item {
-        WatchlistButton(
-          modifier = Modifier.padding(paddingValues = ListPaddingValues),
-          onWatchlist = userDetails?.watchlist == true,
-          onClick = onAddToWatchlistClicked
-        )
+        AnimatedContent(
+          targetState = accountDetails,
+          label = "Watchlist button animation"
+        ) { details ->
+          if (details is AccountDetailsState.Loading) {
+            WatchlistButtonSkeleton(
+              modifier = Modifier.padding(paddingValues = ListPaddingValues),
+            )
+          } else {
+            WatchlistButton(
+              modifier = Modifier.padding(paddingValues = ListPaddingValues),
+              onWatchlist = accountDetails.watchlist,
+              onClick = onAddToWatchlistClicked
+            )
+          }
+        }
       }
 
       item {
         UserRating(
           overallUserScore = mediaDetails.rating,
-          userRating = userDetails?.beautifiedRating,
+          userRating = accountDetails.rating,
           onAddRateClicked = onAddRateClicked
         )
       }
@@ -663,16 +676,19 @@ class DetailsViewStateProvider : PreviewParameterProvider<DetailsViewState> {
         DetailsViewState(
           mediaId = popularMovie.id,
           mediaType = MediaType.MOVIE,
+          accountDetails = AccountDetailsState.Loading,
           isLoading = true,
         ),
 
         DetailsViewState(
           mediaId = popularMovie.id,
-          userDetails = AccountMediaDetails(
-            id = 8679,
-            favorite = false,
-            rating = 9.0f,
-            watchlist = false
+          accountDetails = AccountDetailsState.LoggedIn(
+            AccountMediaDetails(
+              id = 8679,
+              favorite = false,
+              rating = 9.0f,
+              watchlist = false
+            )
           ),
           mediaType = MediaType.MOVIE,
           mediaDetails = movieDetails,
@@ -682,6 +698,7 @@ class DetailsViewStateProvider : PreviewParameterProvider<DetailsViewState> {
           mediaId = popularMovie.id,
           mediaType = MediaType.TV,
           mediaDetails = movieDetails,
+          accountDetails = AccountDetailsState.Unauthenticated,
           similarMovies = similarMovies,
         ),
 
@@ -690,6 +707,7 @@ class DetailsViewStateProvider : PreviewParameterProvider<DetailsViewState> {
           mediaType = MediaType.MOVIE,
           mediaDetails = movieDetails,
           similarMovies = similarMovies,
+          accountDetails = AccountDetailsState.Unauthenticated,
           reviews = reviews,
         ),
 
@@ -698,11 +716,13 @@ class DetailsViewStateProvider : PreviewParameterProvider<DetailsViewState> {
           mediaType = MediaType.MOVIE,
           mediaDetails = movieDetails,
           similarMovies = similarMovies,
-          userDetails = AccountMediaDetails(
-            id = 0,
-            favorite = false,
-            rating = 9.0f,
-            watchlist = true
+          accountDetails = AccountDetailsState.LoggedIn(
+            AccountMediaDetails(
+              id = 0,
+              favorite = false,
+              rating = 9.0f,
+              watchlist = true
+            )
           ),
           reviews = reviews,
         ),
@@ -710,6 +730,7 @@ class DetailsViewStateProvider : PreviewParameterProvider<DetailsViewState> {
         DetailsViewState(
           mediaId = popularMovie.id,
           mediaType = MediaType.MOVIE,
+          accountDetails = AccountDetailsState.Unauthenticated,
           error = UIText.StringText("Something went wrong.")
         ),
       )

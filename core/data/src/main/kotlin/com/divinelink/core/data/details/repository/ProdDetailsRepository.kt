@@ -20,6 +20,7 @@ import com.divinelink.core.network.media.model.details.toDomainMedia
 import com.divinelink.core.network.media.model.details.videos.VideosRequestApi
 import com.divinelink.core.network.media.model.details.videos.toDomainVideosList
 import com.divinelink.core.network.media.model.details.watchlist.AddToWatchlistRequestApi
+import com.divinelink.core.network.media.model.details.watchlist.AddToWatchlistResponseApi
 import com.divinelink.core.network.media.model.rating.AddRatingRequestApi
 import com.divinelink.core.network.media.model.rating.DeleteRatingRequestApi
 import com.divinelink.core.network.media.model.states.AccountMediaDetailsRequestApi
@@ -89,9 +90,18 @@ class ProdDetailsRepository @Inject constructor(
       Result.success(Unit)
     }
 
-  override fun addToWatchlist(request: AddToWatchlistRequestApi): Flow<Result<Unit>> = mediaRemote
-    .addToWatchlist(request)
-    .map {
-      Result.success(Unit)
-    }
+  override fun addToWatchlist(request: AddToWatchlistRequestApi): Flow<Result<AddToWatchlistResult>> =
+    mediaRemote
+      .addToWatchlist(request)
+      .map { response ->
+        Result.success(response.map())
+      }
 }
+
+fun AddToWatchlistResponseApi.map() = AddToWatchlistResult(
+  added = this.success && this.statusCode == 1 || this.statusCode == 12
+)
+
+data class AddToWatchlistResult(
+  val added: Boolean
+)

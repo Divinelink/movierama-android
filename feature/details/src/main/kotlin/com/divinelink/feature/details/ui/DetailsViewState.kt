@@ -11,12 +11,41 @@ import com.divinelink.core.model.media.MediaType
 import com.divinelink.core.ui.UIText
 import com.divinelink.core.ui.snackbar.SnackbarMessage
 
+sealed interface AccountDetailsState {
+  data object Loading : AccountDetailsState
+  data object Unauthenticated : AccountDetailsState
+  data class LoggedIn(val accountDetails: AccountMediaDetails) : AccountDetailsState
+}
+
+
+val AccountDetailsState.accountDetails: AccountMediaDetails
+  get() = when (this) {
+    is AccountDetailsState.Loading -> null
+    is AccountDetailsState.Unauthenticated -> null
+    is AccountDetailsState.LoggedIn -> accountDetails
+  }
+
+val AccountDetailsState?.watchlist: Boolean
+  get() = when (this) {
+    is AccountDetailsState.Loading -> false
+    is AccountDetailsState.Unauthenticated -> false
+    is AccountDetailsState.LoggedIn -> accountDetails.watchlist
+    null -> false
+  }
+
+val AccountDetailsState.rating: String?
+  get() = when (this) {
+    is AccountDetailsState.Loading -> null
+    is AccountDetailsState.Unauthenticated -> null
+    is AccountDetailsState.LoggedIn -> accountDetails.beautifiedRating
+  }
+
 data class DetailsViewState(
   val isLoading: Boolean = false,
   val mediaType: MediaType,
   val mediaId: Int,
   val mediaDetails: MediaDetails? = null,
-  val userDetails: AccountMediaDetails? = null,
+  val accountDetails: AccountDetailsState,
   val reviews: List<Review>? = null,
   val similarMovies: List<MediaItem.Media>? = null,
   val trailer: Video? = null,

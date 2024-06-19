@@ -225,7 +225,7 @@ class DetailsContentTest : ComposeTest() {
         viewState = DetailsViewState(
           mediaId = 0,
           mediaType = MediaType.MOVIE,
-          userDetails = AccountMediaDetailsFactory.Rated(),
+          accountDetails = AccountMediaDetailsFactory.Rated(),
           mediaDetails = MediaDetailsFactory.FightClub(),
         ),
         onNavigateUp = {},
@@ -289,7 +289,7 @@ class DetailsContentTest : ComposeTest() {
           mediaId = 0,
           mediaType = MediaType.MOVIE,
           mediaDetails = MediaDetailsFactory.FightClub(),
-          userDetails = AccountMediaDetailsFactory.NotRated(),
+          accountDetails = AccountMediaDetailsFactory.NotRated(),
         ),
         onNavigateUp = {},
         onMarkAsFavoriteClicked = {},
@@ -321,7 +321,7 @@ class DetailsContentTest : ComposeTest() {
           mediaId = 0,
           mediaType = MediaType.MOVIE,
           mediaDetails = MediaDetailsFactory.FightClub(),
-          userDetails = AccountMediaDetailsFactory.NotRated().toWizard {
+          accountDetails = AccountMediaDetailsFactory.NotRated().toWizard {
             withWatchlist(true)
           },
         ),
@@ -355,7 +355,7 @@ class DetailsContentTest : ComposeTest() {
         mediaId = 0,
         mediaType = MediaType.MOVIE,
         mediaDetails = MediaDetailsFactory.FightClub(),
-        userDetails = AccountMediaDetailsFactory.NotRated(),
+        accountDetails = AccountMediaDetailsFactory.NotRated(),
       )
     )
 
@@ -370,7 +370,7 @@ class DetailsContentTest : ComposeTest() {
         onAddToWatchlistClicked = {
           hasClickedAddToWatchlist = true
           viewState.value = viewState.value.copy(
-            userDetails = AccountMediaDetailsFactory.NotRated().toWizard {
+            accountDetails = AccountMediaDetailsFactory.NotRated().toWizard {
               withWatchlist(true)
             }
           )
