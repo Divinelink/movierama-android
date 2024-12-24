@@ -11,18 +11,19 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
 import androidx.lifecycle.SavedStateHandle
+import com.divinelink.core.fixtures.model.details.MediaDetailsFactory
 import com.divinelink.core.model.details.rating.RatingSource
 import com.divinelink.core.model.media.MediaType
 import com.divinelink.core.navigation.arguments.CreditsNavArguments
 import com.divinelink.core.navigation.arguments.DetailsNavArguments
 import com.divinelink.core.testing.ComposeTest
 import com.divinelink.core.testing.factories.details.credits.AggregatedCreditsFactory
-import com.divinelink.core.testing.factories.model.details.MediaDetailsFactory
 import com.divinelink.core.testing.factories.model.media.MediaItemFactory
 import com.divinelink.core.testing.getString
 import com.divinelink.core.testing.navigator.FakeDestinationsNavigator
 import com.divinelink.core.testing.setContentWithTheme
 import com.divinelink.core.testing.usecase.FakeRequestMediaUseCase
+import com.divinelink.core.testing.usecase.TestFetchAllRatingsUseCase
 import com.divinelink.core.testing.usecase.TestSpoilersObfuscationUseCase
 import com.divinelink.core.ui.R
 import com.divinelink.core.ui.TestTags
@@ -54,6 +55,7 @@ class DetailsScreenTest : ComposeTest() {
   private val deleteRatingUseCase = FakeDeleteRatingUseCase()
   private val addToWatchlistUseCase = FakeAddToWatchlistUseCase()
   private val requestMediaUseCase = FakeRequestMediaUseCase()
+  private val fetchAllRatingsUseCase = TestFetchAllRatingsUseCase()
   private val spoilersObfuscationUseCase = TestSpoilersObfuscationUseCase().useCase()
 
   private val destinationsNavigator = FakeDestinationsNavigator()
@@ -105,6 +107,7 @@ class DetailsScreenTest : ComposeTest() {
           addToWatchlistUseCase = addToWatchlistUseCase.mock,
           requestMediaUseCase = requestMediaUseCase.mock,
           spoilersObfuscationUseCase = spoilersObfuscationUseCase,
+          fetchAllRatingsUseCase = fetchAllRatingsUseCase.mock,
           savedStateHandle = SavedStateHandle(
             mapOf(
               "id" to 0,
@@ -189,6 +192,7 @@ class DetailsScreenTest : ComposeTest() {
       addToWatchlistUseCase = addToWatchlistUseCase.mock,
       requestMediaUseCase = requestMediaUseCase.mock,
       spoilersObfuscationUseCase = spoilersObfuscationUseCase,
+      fetchAllRatingsUseCase = fetchAllRatingsUseCase.mock,
       savedStateHandle = SavedStateHandle(
         mapOf(
           "id" to 0,
@@ -246,6 +250,7 @@ class DetailsScreenTest : ComposeTest() {
       addToWatchlistUseCase = addToWatchlistUseCase.mock,
       requestMediaUseCase = requestMediaUseCase.mock,
       spoilersObfuscationUseCase = spoilersObfuscationUseCase,
+      fetchAllRatingsUseCase = fetchAllRatingsUseCase.mock,
       savedStateHandle = SavedStateHandle(
         mapOf(
           "id" to 0,
@@ -349,6 +354,7 @@ class DetailsScreenTest : ComposeTest() {
           addToWatchlistUseCase = addToWatchlistUseCase.mock,
           requestMediaUseCase = requestMediaUseCase.mock,
           spoilersObfuscationUseCase = spoilersObfuscationUseCase,
+          fetchAllRatingsUseCase = fetchAllRatingsUseCase.mock,
           savedStateHandle = SavedStateHandle(
             mapOf(
               "id" to 2316,
@@ -427,6 +433,7 @@ class DetailsScreenTest : ComposeTest() {
           addToWatchlistUseCase = addToWatchlistUseCase.mock,
           requestMediaUseCase = requestMediaUseCase.mock,
           spoilersObfuscationUseCase = spoilersObfuscationUseCase,
+          fetchAllRatingsUseCase = fetchAllRatingsUseCase.mock,
           savedStateHandle = SavedStateHandle(
             mapOf(
               "id" to 2316,
